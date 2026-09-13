@@ -13,11 +13,11 @@ async function upsertUser(username, displayName, password) {
 }
 
 async function main() {
-  const sreePassword = process.env.SREE_PASSWORD || "sree123";
-  const dhanushPassword = process.env.DHANUSH_PASSWORD || "dhanush123";
-  await upsertUser("sree", "Sree", sreePassword);
-  await upsertUser("dhanush", "Dhanush", dhanushPassword);
-  console.log("Seeded Sree and Dhanush. No sample memories were created.");
+  const sharedPassword = "dhanush123";
+  await upsertUser("couple", "Sree & Dhanush", sharedPassword);
+  await upsertUser("sree", "Sree", sharedPassword);
+  await upsertUser("dhanush", "Dhanush", sharedPassword);
+  console.log("Seeded couple, Sree, and Dhanush accounts. No sample memories were created.");
 }
 
 main()

@@ -6,14 +6,11 @@ import { AppNav } from "@/components/AppNav";
 import { MovieForm } from "@/components/MovieForm";
 import { SimpleEntryForm } from "@/components/SimpleEntryForm";
 import { CATEGORIES, todayKey } from "@/lib/constants";
-import { useSession } from "next-auth/react";
 
 function AddInner() {
   const params = useSearchParams();
-  const { data } = useSession();
   const [dateKey, setDateKey] = useState(params.get("date") || todayKey());
   const [category, setCategory] = useState(params.get("category") || "");
-  const username = data?.user?.username || "sree";
 
   return (
     <>
@@ -46,10 +43,10 @@ function AddInner() {
             ))}
           </div>
         </div>
-        {category === "MOVIE" && <MovieForm dateKey={dateKey} username={username} />}
-        {category === "FOOD" && <SimpleEntryForm dateKey={dateKey} username={username} category="FOOD" />}
-        {category === "PLACE" && <SimpleEntryForm dateKey={dateKey} username={username} category="PLACE" />}
-        {category === "OTHER" && <SimpleEntryForm dateKey={dateKey} username={username} category="OTHER" />}
+        {category === "MOVIE" && <MovieForm dateKey={dateKey} />}
+        {category === "FOOD" && <SimpleEntryForm dateKey={dateKey} category="FOOD" />}
+        {category === "PLACE" && <SimpleEntryForm dateKey={dateKey} category="PLACE" />}
+        {category === "OTHER" && <SimpleEntryForm dateKey={dateKey} category="OTHER" />}
       </main>
     </>
   );

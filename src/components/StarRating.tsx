@@ -12,37 +12,31 @@ export function StarRating({
   colorClass?: string;
 }) {
   const current = value ?? 0;
-  const stars = [1, 2, 3, 4, 5];
+  const ratings = Array.from({ length: 10 }, (_, index) => index + 1);
+  const selectedClass = colorClass === "text-dhanush" ? "bg-dhanush" : colorClass === "text-sree" ? "bg-sree" : "bg-rose";
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <div className={`flex ${colorClass}`}>
-        {stars.map((star) => {
-          const full = current >= star;
-          const half = !full && current >= star - 0.5;
+      <div className={`flex flex-wrap gap-1 ${colorClass}`}>
+        {ratings.map((rating) => {
+          const selected = current === rating;
           return (
             <button
-              key={star}
+              key={rating}
               type="button"
               disabled={readOnly}
-              onClick={() => onChange?.(current === star ? star - 0.5 : star)}
-              className="relative h-7 w-7 text-xl leading-none disabled:cursor-default"
-              aria-label={`${star} stars`}
+              onClick={() => onChange?.(current === rating ? 0 : rating)}
+              className={`h-8 w-8 rounded-full text-sm font-medium transition disabled:cursor-default ${
+                selected ? `${selectedClass} text-white shadow-card` : "bg-blush text-ink hover:bg-white"
+              }`}
+              aria-label={`${rating} out of 10`}
             >
-              <span className="text-blush">★</span>
-              {(full || half) && (
-                <span
-                  className="absolute inset-0 overflow-hidden"
-                  style={{ width: half ? "50%" : "100%" }}
-                >
-                  ★
-                </span>
-              )}
+              <span>{rating}</span>
             </button>
           );
         })}
       </div>
-      <span className="text-sm text-muted">{current ? `${current}/5` : "Not rated yet"}</span>
+      <span className="text-sm text-muted">{current ? `${current}/10` : "Not rated yet"}</span>
     </div>
   );
 }

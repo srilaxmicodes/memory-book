@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
-import { isSree } from "@/lib/constants";
+import { saveUpload } from "@/lib/storage";
 
 function parseOptionalNumber(value: FormDataEntryValue | null) {
   if (value === null || value === "") return null;
@@ -11,8 +11,27 @@ function parseOptionalNumber(value: FormDataEntryValue | null) {
   return Number.isFinite(n) ? n : null;
 }
 
+function parseOptionalRating(value: FormDataEntryValue | null) {
+  const rating = parseOptionalNumber(value);
+  return rating === null ? null : Math.max(0, Math.min(10, rating));
+}
+
 function parseNumber(value: FormDataEntryValue | null) {
   return parseOptionalNumber(value) ?? 0;
+}
+
+async function saveEntryUploads(formData: FormData, entryId: string, uploadedById: string) {
+  const files = formData.getAll("files").filter((item): item is File => item instanceof File && item.size > 0);
+  for (const file of files) {
+    const stored = await saveUpload(file);
+    await prisma.media.create({
+      data: {
+        ...stored,
+        uploadedById,
+        entryId,
+      },
+    });
+  }
 }
 
 export async function createEntry(formData: FormData) {
@@ -24,9 +43,8 @@ export async function createEntry(formData: FormData) {
     return { error: "Date and title are required." };
   }
 
-  const sreeRating = parseOptionalNumber(formData.get("sreeRating"));
-  const dhanushRating = parseOptionalNumber(formData.get("dhanushRating"));
-  const mine = isSree(user.username);
+  const sreeRating = parseOptionalRating(formData.get("sreeRating"));
+  const dhanushRating = parseOptionalRating(formData.get("dhanushRating"));
 
   const entry = await prisma.entry.create({
     data: {
@@ -49,12 +67,14 @@ export async function createEntry(formData: FormData) {
       restaurant: String(formData.get("restaurant") || "") || null,
       location: String(formData.get("location") || "") || null,
       description: String(formData.get("description") || "") || null,
-      sreeRating: mine ? sreeRating : null,
-      sreeReview: mine ? String(formData.get("sreeReview") || "") : "",
-      dhanushRating: mine ? null : dhanushRating,
-      dhanushReview: mine ? "" : String(formData.get("dhanushReview") || ""),
+      sreeRating,
+      sreeReview: String(formData.get("sreeReview") || ""),
+      dhanushRating,
+      dhanushReview: String(formData.get("dhanushReview") || ""),
     },
   });
+
+  await saveEntryUploads(formData, entry.id, user.id);
 
   revalidatePath("/home");
   revalidatePath("/memories");
@@ -67,9 +87,8 @@ export async function updateEntry(formData: FormData) {
   const user = await requireUser();
   const id = String(formData.get("id") || "");
   const entry = await prisma.entry.findUnique({ where: { id } });
-  if (!entry) return { error: "Entry not found." };
+  if (!entry) return;
 
-  const mine = isSree(user.username);
   const data: Record<string, unknown> = {
     title: String(formData.get("title") || entry.title),
     cost: parseNumber(formData.get("cost")),
@@ -79,33 +98,28 @@ export async function updateEntry(formData: FormData) {
     location: String(formData.get("location") || "") || null,
     description: String(formData.get("description") || "") || null,
     dateKey: String(formData.get("dateKey") || entry.dateKey),
+    sreeRating: parseOptionalRating(formData.get("sreeRating")),
+    sreeReview: String(formData.get("sreeReview") || ""),
+    dhanushRating: parseOptionalRating(formData.get("dhanushRating")),
+    dhanushReview: String(formData.get("dhanushReview") || ""),
   };
 
-  if (mine) {
-    data.sreeRating = parseOptionalNumber(formData.get("sreeRating"));
-    data.sreeReview = String(formData.get("sreeReview") || "");
-  } else {
-    data.dhanushRating = parseOptionalNumber(formData.get("dhanushRating"));
-    data.dhanushReview = String(formData.get("dhanushReview") || "");
-  }
-
   await prisma.entry.update({ where: { id }, data });
+  await saveEntryUploads(formData, id, user.id);
   revalidatePath(`/entry/${id}`);
   revalidatePath("/home");
+  revalidatePath("/memories");
   revalidatePath("/stats");
-  return { ok: true };
 }
 
 export async function toggleFavorite(entryId: string) {
-  const user = await requireUser();
+  await requireUser();
   const entry = await prisma.entry.findUnique({ where: { id: entryId } });
-  if (!entry) return { error: "Entry not found." };
-  const mine = isSree(user.username);
+  if (!entry) return;
+  const nextFavorite = !(entry.favoriteSree || entry.favoriteDhanush);
   await prisma.entry.update({
     where: { id: entryId },
-    data: mine
-      ? { favoriteSree: !entry.favoriteSree }
-      : { favoriteDhanush: !entry.favoriteDhanush },
+    data: { favoriteSree: nextFavorite, favoriteDhanush: nextFavorite },
   });
   revalidatePath("/favorites");
   revalidatePath(`/entry/${entryId}`);
@@ -113,11 +127,10 @@ export async function toggleFavorite(entryId: string) {
 }
 
 export async function addFoodItem(formData: FormData) {
-  const user = await requireUser();
+  await requireUser();
   const entryId = String(formData.get("entryId") || "");
   const name = String(formData.get("name") || "").trim();
-  if (!entryId || !name) return { error: "Food name is required." };
-  const mine = isSree(user.username);
+  if (!entryId || !name) return;
   const item = await prisma.foodItem.create({
     data: {
       entryId,
@@ -125,10 +138,10 @@ export async function addFoodItem(formData: FormData) {
       cost: parseNumber(formData.get("cost")),
       worthIt: String(formData.get("worthIt") || "") || null,
       notes: String(formData.get("notes") || ""),
-      sreeRating: mine ? parseOptionalNumber(formData.get("sreeRating")) : null,
-      sreeReview: mine ? String(formData.get("sreeReview") || "") : "",
-      dhanushRating: mine ? null : parseOptionalNumber(formData.get("dhanushRating")),
-      dhanushReview: mine ? "" : String(formData.get("dhanushReview") || ""),
+      sreeRating: parseOptionalRating(formData.get("sreeRating")),
+      sreeReview: String(formData.get("sreeReview") || ""),
+      dhanushRating: parseOptionalRating(formData.get("dhanushRating")),
+      dhanushReview: String(formData.get("dhanushReview") || ""),
     },
   });
   const entry = await prisma.entry.findUnique({
@@ -140,28 +153,23 @@ export async function addFoodItem(formData: FormData) {
     await prisma.entry.update({ where: { id: entryId }, data: { cost: total } });
   }
   revalidatePath(`/entry/${entryId}`);
-  return { id: item.id };
 }
 
 export async function updateFoodItem(formData: FormData) {
-  const user = await requireUser();
+  await requireUser();
   const id = String(formData.get("id") || "");
   const item = await prisma.foodItem.findUnique({ where: { id } });
-  if (!item) return { error: "Item not found." };
-  const mine = isSree(user.username);
+  if (!item) return;
   const data: Record<string, unknown> = {
     name: String(formData.get("name") || item.name),
     cost: parseNumber(formData.get("cost")),
     worthIt: String(formData.get("worthIt") || "") || null,
     notes: String(formData.get("notes") || ""),
+    sreeRating: parseOptionalRating(formData.get("sreeRating")),
+    sreeReview: String(formData.get("sreeReview") || ""),
+    dhanushRating: parseOptionalRating(formData.get("dhanushRating")),
+    dhanushReview: String(formData.get("dhanushReview") || ""),
   };
-  if (mine) {
-    data.sreeRating = parseOptionalNumber(formData.get("sreeRating"));
-    data.sreeReview = String(formData.get("sreeReview") || "");
-  } else {
-    data.dhanushRating = parseOptionalNumber(formData.get("dhanushRating"));
-    data.dhanushReview = String(formData.get("dhanushReview") || "");
-  }
   await prisma.foodItem.update({ where: { id }, data });
   const entry = await prisma.entry.findUnique({
     where: { id: item.entryId },
@@ -172,13 +180,12 @@ export async function updateFoodItem(formData: FormData) {
     await prisma.entry.update({ where: { id: entry.id }, data: { cost: total } });
   }
   revalidatePath(`/entry/${item.entryId}`);
-  return { ok: true };
 }
 
 export async function saveDayMemory(formData: FormData) {
   const user = await requireUser();
   const dateKey = String(formData.get("dateKey") || "");
-  if (!dateKey) return { error: "Date is required." };
+  if (!dateKey) return;
   await prisma.dayMemory.upsert({
     where: { dateKey },
     update: {
@@ -197,5 +204,4 @@ export async function saveDayMemory(formData: FormData) {
   });
   revalidatePath(`/day/${dateKey}`);
   revalidatePath("/home");
-  return { ok: true };
 }

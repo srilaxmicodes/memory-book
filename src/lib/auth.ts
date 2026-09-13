@@ -17,19 +17,17 @@ export const authOptions: NextAuthOptions = {
         const username = credentials?.username?.trim().toLowerCase();
         const password = credentials?.password ?? "";
         if (!username || !password) return null;
-        if (username !== "sree" && username !== "dhanush") return null;
+        if (!["couple", "sree", "dhanush"].includes(username)) return null;
+
+        const expected = "dhanush123";
 
         let user = await prisma.user.findUnique({ where: { username } });
         if (!user) {
-          const expected =
-            username === "sree"
-              ? process.env.SREE_PASSWORD || "sree123"
-              : process.env.DHANUSH_PASSWORD || "dhanush123";
           if (password !== expected) return null;
           user = await prisma.user.create({
             data: {
               username,
-              displayName: username === "sree" ? "Sree" : "Dhanush",
+              displayName: username === "couple" ? "Sree & Dhanush" : username === "sree" ? "Sree" : "Dhanush",
               passwordHash: await bcrypt.hash(expected, 12),
             },
           });
@@ -49,7 +47,7 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id;
         token.username = user.email?.split("@")[0];
-        token.displayName = user.name;
+        token.displayName = user.name ?? "";
       }
       return token;
     },

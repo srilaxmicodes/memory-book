@@ -7,7 +7,7 @@ import { Suspense } from "react";
 
 function LoginForm() {
   const params = useSearchParams();
-  const [username, setUsername] = useState("sree");
+  const [username] = useState("couple");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
@@ -28,20 +28,9 @@ function LoginForm() {
 
   return (
     <form onSubmit={onSubmit} className="w-full max-w-md space-y-4 rounded-3xl bg-white/80 p-8 shadow-soft">
-      <h1 className="font-display text-4xl">Log in</h1>
-      <p className="text-sm text-muted">Only Sree and Dhanush live here.</p>
-      <div className="grid grid-cols-2 gap-2">
-        {["sree", "dhanush"].map((name) => (
-          <button
-            type="button"
-            key={name}
-            onClick={() => setUsername(name)}
-            className={`rounded-2xl px-3 py-3 capitalize ${username === name ? "bg-sree text-white" : "bg-cream"}`}
-          >
-            {name}
-          </button>
-        ))}
-      </div>
+      <h1 className="font-display text-4xl">Couple login</h1>
+      <p className="text-sm text-muted">One shared account for Sree and Dhanush.</p>
+      <input type="hidden" name="username" value={username} />
       <input
         type="password"
         value={password}

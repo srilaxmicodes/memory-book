@@ -6,11 +6,9 @@ import { MovieSearch } from "./MovieSearch";
 import { RatingField } from "./RatingField";
 import { WorthItPicker } from "./WorthItPicker";
 import { useRouter } from "next/navigation";
-import { isSree } from "@/lib/constants";
 
-export function MovieForm({ dateKey, username }: { dateKey: string; username: string }) {
+export function MovieForm({ dateKey }: { dateKey: string }) {
   const router = useRouter();
-  const mine = isSree(username);
   const [movie, setMovie] = useState({
     title: "",
     posterUrl: "",
@@ -33,7 +31,7 @@ export function MovieForm({ dateKey, username }: { dateKey: string; username: st
       setError(result.error);
       return;
     }
-    if ("id" in result && result.id) router.push(`/entry/${result.id}`);
+    if ("id" in result && result.id) router.push("/home");
   }
 
   return (
@@ -73,17 +71,17 @@ export function MovieForm({ dateKey, username }: { dateKey: string; username: st
         placeholder="Cost in ₹"
         className="w-full rounded-2xl bg-white px-4 py-3 shadow-card outline-none"
       />
-      {mine ? (
-        <>
-          <RatingField name="sreeRating" label="Sree’s rating" colorClass="text-sree" />
-          <textarea name="sreeReview" placeholder="Sree’s review" className="w-full rounded-2xl bg-white px-4 py-3 shadow-card outline-none" rows={3} />
-        </>
-      ) : (
-        <>
-          <RatingField name="dhanushRating" label="Dhanush’s rating" colorClass="text-dhanush" />
-          <textarea name="dhanushReview" placeholder="Dhanush’s review" className="w-full rounded-2xl bg-white px-4 py-3 shadow-card outline-none" rows={3} />
-        </>
-      )}
+      <RatingField name="sreeRating" label="Sree’s rating out of 10" colorClass="text-sree" />
+      <textarea name="sreeReview" placeholder="Sree’s review" className="w-full rounded-2xl bg-white px-4 py-3 shadow-card outline-none" rows={3} />
+      <RatingField name="dhanushRating" label="Dhanush’s rating out of 10" colorClass="text-dhanush" />
+      <textarea name="dhanushReview" placeholder="Dhanush’s review" className="w-full rounded-2xl bg-white px-4 py-3 shadow-card outline-none" rows={3} />
+      <textarea name="description" placeholder="Description" className="w-full rounded-2xl bg-white px-4 py-3 shadow-card outline-none" rows={3} />
+      <label className="flex cursor-pointer flex-col items-center justify-center rounded-3xl border border-dashed border-rose/50 bg-white/70 px-4 py-8 text-center shadow-card">
+        <input type="file" name="files" accept="image/*,video/*" multiple className="sr-only" />
+        <span className="text-2xl">📷🎥</span>
+        <span className="mt-2 font-medium">Upload photos & videos</span>
+        <span className="mt-1 text-sm text-muted">They will be saved with this movie.</span>
+      </label>
       <WorthItPicker />
       <textarea name="notes" placeholder="Highlight / extra notes" className="w-full rounded-2xl bg-white px-4 py-3 shadow-card outline-none" rows={3} />
       {error && <p className="text-sm text-sree">{error}</p>}

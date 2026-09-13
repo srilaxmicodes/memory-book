@@ -36,7 +36,7 @@ export function EntryCard(entry: EntryCardProps) {
         </div>
         <h3 className="font-display text-2xl">{entry.title}</h3>
         <p className="text-sm text-muted">
-          ❤️ {entry.sreeRating ?? "—"} · 💙 {entry.dhanushRating ?? "—"}
+          ❤️ {entry.sreeRating ? `${entry.sreeRating}/10` : "—"} · 💙 {entry.dhanushRating ? `${entry.dhanushRating}/10` : "—"}
           {avg ? ` · avg ${avg}` : ""}
           {entry.cost ? ` · ${formatRupees(entry.cost)}` : ""}
         </p>
