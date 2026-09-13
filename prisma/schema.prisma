@@ -1,0 +1,103 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  displayName  String
+  passwordHash String
+  createdAt    DateTime @default(now())
+  entries      Entry[]
+  media        Media[]
+}
+
+model Entry {
+  id            String    @id @default(cuid())
+  category      String
+  dateKey       String
+  title         String
+  cost          Float     @default(0)
+  worthIt       String?
+  notes         String    @default("")
+  createdById   String
+  createdByName String
+  createdBy     User      @relation(fields: [createdById], references: [id])
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  posterUrl   String?
+  backdropUrl String?
+  releaseDate String?
+  genres      String?
+  overview    String?
+  tmdbId      String?
+  imdbId      String?
+  imdbRating  String?
+
+  restaurant  String?
+  location    String?
+  description String?
+
+  sreeRating      Float?
+  sreeReview      String  @default("")
+  dhanushRating   Float?
+  dhanushReview   String  @default("")
+  favoriteSree    Boolean @default(false)
+  favoriteDhanush Boolean @default(false)
+
+  foodItems FoodItem[]
+  media     Media[]
+
+  @@index([dateKey])
+  @@index([category])
+  @@index([title])
+}
+
+model FoodItem {
+  id            String  @id @default(cuid())
+  entryId       String
+  entry         Entry   @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  name          String
+  cost          Float   @default(0)
+  worthIt       String?
+  notes         String  @default("")
+  sreeRating    Float?
+  sreeReview    String  @default("")
+  dhanushRating Float?
+  dhanushReview String  @default("")
+  media         Media[]
+}
+
+model DayMemory {
+  id        String   @id @default(cuid())
+  dateKey   String   @unique
+  highlight String   @default("")
+  mood      String   @default("")
+  moodEmoji String   @default("")
+  updatedBy String   @default("")
+  updatedAt DateTime @updatedAt
+  media     Media[]
+}
+
+model Media {
+  id           String     @id @default(cuid())
+  url          String
+  storageKey   String
+  kind         String
+  mimeType     String
+  uploadedById String
+  uploadedBy   User       @relation(fields: [uploadedById], references: [id])
+  createdAt    DateTime   @default(now())
+  entryId      String?
+  entry        Entry?     @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  foodItemId   String?
+  foodItem     FoodItem?  @relation(fields: [foodItemId], references: [id], onDelete: Cascade)
+  dayMemoryId  String?
+  dayMemory    DayMemory? @relation(fields: [dayMemoryId], references: [id], onDelete: Cascade)
+}
