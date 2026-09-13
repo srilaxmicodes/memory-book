@@ -6,9 +6,11 @@ import { MovieSearch } from "./MovieSearch";
 import { RatingField } from "./RatingField";
 import { WorthItPicker } from "./WorthItPicker";
 import { useRouter } from "next/navigation";
+import { useToast } from "./ToastProvider";
 
 export function MovieForm({ dateKey }: { dateKey: string }) {
   const router = useRouter();
+  const { showToast } = useToast();
   const [movie, setMovie] = useState({
     title: "",
     posterUrl: "",
@@ -23,15 +25,26 @@ export function MovieForm({ dateKey }: { dateKey: string }) {
   const [error, setError] = useState("");
 
   async function submit(formData: FormData) {
-    formData.set("category", "MOVIE");
-    formData.set("dateKey", dateKey);
-    Object.entries(movie).forEach(([key, value]) => formData.set(key, value));
-    const result = await createEntry(formData);
-    if ("error" in result && result.error) {
-      setError(result.error);
-      return;
+    setError("");
+    showToast("Saving movie...", "loading");
+    try {
+      formData.set("category", "MOVIE");
+      formData.set("dateKey", dateKey);
+      Object.entries(movie).forEach(([key, value]) => formData.set(key, value));
+      const result = await createEntry(formData);
+      if ("error" in result && result.error) {
+        setError(result.error);
+        showToast(result.error, "error");
+        return;
+      }
+      if ("id" in result && result.id) {
+        showToast("Movie saved.");
+        router.push("/home");
+      }
+    } catch {
+      setError("Movie could not be saved. Please try again.");
+      showToast("Movie could not be saved.", "error");
     }
-    if ("id" in result && result.id) router.push("/home");
   }
 
   return (

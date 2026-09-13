@@ -9,16 +9,19 @@ export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const user = await requireUser();
-  const [movies, foods, places, others, recent] = await Promise.all([
-    prisma.entry.count({ where: { category: "MOVIE" } }),
-    prisma.entry.count({ where: { category: "FOOD" } }),
-    prisma.entry.count({ where: { category: "PLACE" } }),
-    prisma.entry.count({ where: { category: "OTHER" } }),
-    prisma.entry.findMany({
-      orderBy: [{ dateKey: "desc" }, { createdAt: "desc" }],
-      take: 8,
-    }),
-  ]);
+  const counts = await prisma.entry.groupBy({
+    by: ["category"],
+    _count: true,
+  });
+  const recent = await prisma.entry.findMany({
+    orderBy: [{ dateKey: "desc" }, { createdAt: "desc" }],
+    take: 8,
+  });
+  const countByCategory = Object.fromEntries(counts.map((item) => [item.category, item._count]));
+  const movies = countByCategory.MOVIE ?? 0;
+  const foods = countByCategory.FOOD ?? 0;
+  const places = countByCategory.PLACE ?? 0;
+  const others = countByCategory.OTHER ?? 0;
   const total = movies + foods + places + others;
   const greetings = [
     `Welcome back, ${user.displayName} 💗`,

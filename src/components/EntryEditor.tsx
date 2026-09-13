@@ -3,6 +3,7 @@
 import { updateEntry, toggleFavorite } from "@/actions/journal";
 import { RatingField } from "./RatingField";
 import { WorthItPicker } from "./WorthItPicker";
+import { useToast } from "./ToastProvider";
 
 type Entry = {
   id: string;
@@ -24,20 +25,41 @@ type Entry = {
 };
 
 export function EntryEditor({ entry }: { entry: Entry }) {
+  const { showToast } = useToast();
   const fav = entry.favoriteSree || entry.favoriteDhanush;
   const showRestaurant = entry.category === "FOOD";
   const showLocation = entry.category === "FOOD" || entry.category === "PLACE";
   const descriptionPlaceholder =
     entry.category === "FOOD" ? "Describe the food or outing" : entry.category === "PLACE" ? "Describe the place" : "Description";
 
+  async function updateFavorite() {
+    showToast(fav ? "Removing favorite..." : "Saving favorite...", "loading");
+    try {
+      await toggleFavorite(entry.id);
+      showToast(fav ? "Removed from favorites." : "Added to favorites.");
+    } catch {
+      showToast("Favorite could not be updated.", "error");
+    }
+  }
+
+  async function saveChanges(formData: FormData) {
+    showToast("Saving changes...", "loading");
+    try {
+      await updateEntry(formData);
+      showToast("Changes saved.");
+    } catch {
+      showToast("Changes could not be saved.", "error");
+    }
+  }
+
   return (
     <div className="space-y-4">
-      <form action={toggleFavorite.bind(null, entry.id)}>
+      <form action={updateFavorite}>
         <button className="rounded-full bg-white px-4 py-2 shadow-card">
           {fav ? "❤️ Our favorite" : "♡ Mark our favorite"}
         </button>
       </form>
-      <form action={updateEntry} className="space-y-4 rounded-3xl bg-white/80 p-5 shadow-card">
+      <form action={saveChanges} className="space-y-4 rounded-3xl bg-white/80 p-5 shadow-card">
         <input type="hidden" name="id" value={entry.id} />
         <h3 className="font-display text-2xl">View / edit this memory</h3>
         <input name="title" placeholder="Title" defaultValue={entry.title} className="w-full rounded-2xl bg-white px-4 py-3 shadow-card outline-none" />

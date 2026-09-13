@@ -13,7 +13,7 @@ async function upsertUser(username, displayName, password) {
 }
 
 async function main() {
-  const sharedPassword = "dhanush123";
+  const sharedPassword = "sree";
   await upsertUser("couple", "Sree & Dhanush", sharedPassword);
   await upsertUser("sree", "Sree", sharedPassword);
   await upsertUser("dhanush", "Dhanush", sharedPassword);

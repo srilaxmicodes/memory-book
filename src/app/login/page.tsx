@@ -4,26 +4,43 @@ import { signIn } from "next-auth/react";
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
+import { useToast } from "@/components/ToastProvider";
+
+const redirectAfterToast = (url: string) => {
+  window.setTimeout(() => {
+    window.location.href = url;
+  }, 700);
+};
 
 function LoginForm() {
   const params = useSearchParams();
+  const { showToast } = useToast();
   const [username] = useState("couple");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault();
-    const result = await signIn("credentials", {
-      username,
-      password,
-      redirect: false,
-      callbackUrl: params.get("callbackUrl") || "/home",
-    });
-    if (result?.error) {
-      setError("That password didn’t match. Try again, cutie.");
-      return;
+    setError("");
+    showToast("Checking password...", "loading");
+    try {
+      const result = await signIn("credentials", {
+        username,
+        password,
+        redirect: false,
+        callbackUrl: params.get("callbackUrl") || "/home",
+      });
+      if (result?.error) {
+        setError("That password didn’t match. Try again, cutie.");
+        showToast("Password did not match.", "error");
+        return;
+      }
+      showToast("Logged in.");
+      redirectAfterToast(params.get("callbackUrl") || "/home");
+    } catch {
+      setError("Login failed. Please try again.");
+      showToast("Login failed. Please try again.", "error");
     }
-    window.location.href = params.get("callbackUrl") || "/home";
   }
 
   return (

@@ -2,6 +2,7 @@
 
 import { deleteOwnMedia } from "@/actions/media";
 import { useSession } from "next-auth/react";
+import { useToast } from "./ToastProvider";
 
 type Media = {
   id: string;
@@ -12,6 +13,7 @@ type Media = {
 
 export function MediaGallery({ media }: { media: Media[] }) {
   const { data } = useSession();
+  const { showToast } = useToast();
   if (!media.length) {
     return <p className="text-sm text-muted">No photos or videos yet.</p>;
   }
@@ -29,7 +31,13 @@ export function MediaGallery({ media }: { media: Media[] }) {
           {data?.user?.id === item.uploadedById && (
             <form
               action={async () => {
-                await deleteOwnMedia(item.id);
+                showToast("Deleting upload...", "loading");
+                try {
+                  await deleteOwnMedia(item.id);
+                  showToast("Upload deleted.");
+                } catch {
+                  showToast("Upload could not be deleted.", "error");
+                }
               }}
               className="p-2 text-right"
             >

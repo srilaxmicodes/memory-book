@@ -3,6 +3,7 @@
 import { saveDayMemory } from "@/actions/journal";
 import { MOODS } from "@/lib/constants";
 import { useState } from "react";
+import { useToast } from "./ToastProvider";
 
 export function DayMemoryForm({
   dateKey,
@@ -15,11 +16,22 @@ export function DayMemoryForm({
   mood?: string;
   moodEmoji?: string;
 }) {
+  const { showToast } = useToast();
   const [picked, setPicked] = useState(moodEmoji || "");
   const selected = MOODS.find((item) => item.emoji === picked);
 
+  async function submit(formData: FormData) {
+    showToast("Saving today's memory...", "loading");
+    try {
+      await saveDayMemory(formData);
+      showToast("Today's memory saved.");
+    } catch {
+      showToast("Today's memory could not be saved.", "error");
+    }
+  }
+
   return (
-    <form action={saveDayMemory} className="space-y-4 rounded-3xl bg-white p-6 shadow-card">
+    <form action={submit} className="space-y-4 rounded-3xl bg-white p-6 shadow-card">
       <input type="hidden" name="dateKey" value={dateKey} />
       <input type="hidden" name="mood" value={selected?.label || mood || ""} />
       <input type="hidden" name="moodEmoji" value={picked} />

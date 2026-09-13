@@ -5,6 +5,7 @@ import { RatingField } from "./RatingField";
 import { WorthItPicker } from "./WorthItPicker";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useToast } from "./ToastProvider";
 
 export function SimpleEntryForm({
   dateKey,
@@ -14,17 +15,29 @@ export function SimpleEntryForm({
   category: "FOOD" | "PLACE" | "OTHER";
 }) {
   const router = useRouter();
+  const { showToast } = useToast();
   const [error, setError] = useState("");
 
   async function submit(formData: FormData) {
-    formData.set("category", category);
-    formData.set("dateKey", dateKey);
-    const result = await createEntry(formData);
-    if ("error" in result && result.error) {
-      setError(result.error);
-      return;
+    setError("");
+    showToast("Saving memory...", "loading");
+    try {
+      formData.set("category", category);
+      formData.set("dateKey", dateKey);
+      const result = await createEntry(formData);
+      if ("error" in result && result.error) {
+        setError(result.error);
+        showToast(result.error, "error");
+        return;
+      }
+      if ("id" in result && result.id) {
+        showToast("Memory saved.");
+        router.push("/home");
+      }
+    } catch {
+      setError("Memory could not be saved. Please try again.");
+      showToast("Memory could not be saved.", "error");
     }
-    if ("id" in result && result.id) router.push("/home");
   }
 
   return (

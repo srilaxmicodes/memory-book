@@ -19,7 +19,7 @@ export const authOptions: NextAuthOptions = {
         if (!username || !password) return null;
         if (!["couple", "sree", "dhanush"].includes(username)) return null;
 
-        const expected = "dhanush123";
+        const expected = "sree";
 
         let user = await prisma.user.findUnique({ where: { username } });
         if (!user) {

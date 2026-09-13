@@ -3,10 +3,23 @@
 import { addFoodItem } from "@/actions/journal";
 import { RatingField } from "./RatingField";
 import { WorthItPicker } from "./WorthItPicker";
+import { useToast } from "./ToastProvider";
 
 export function FoodItemForm({ entryId }: { entryId: string }) {
+  const { showToast } = useToast();
+
+  async function submit(formData: FormData) {
+    showToast("Adding food item...", "loading");
+    try {
+      await addFoodItem(formData);
+      showToast("Food item added.");
+    } catch {
+      showToast("Food item could not be added.", "error");
+    }
+  }
+
   return (
-    <form action={addFoodItem} className="space-y-4 rounded-3xl bg-white p-5 shadow-card">
+    <form action={submit} className="space-y-4 rounded-3xl bg-white p-5 shadow-card">
       <input type="hidden" name="entryId" value={entryId} />
       <h3 className="font-display text-2xl">Add a food item</h3>
       <input name="name" required placeholder="Burger, fries, coke…" className="w-full rounded-2xl bg-cream px-4 py-3 outline-none" />
